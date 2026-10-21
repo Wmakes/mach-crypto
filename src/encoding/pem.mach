@@ -219,6 +219,7 @@ fun parse(input: contracts.Bytes, layout: *Layout) contracts.Error {
     var last:          [4]u8;
     var saw_line:      bool  = false;
     var last_line_len: usize = 0;
+    var line_width:    usize = LINE_SIZE;
     for (position < input.len) {
         val line_start: usize = position;
         for (position < input.len && input.data[position] != '\r' &&
@@ -250,9 +251,11 @@ fun parse(input: contracts.Bytes, layout: *Layout) contracts.Error {
             layout.decoded_len  = groups * 3 - padding;
             ret contracts.OK;
         }
-        if (line_len == 0 || line_len > LINE_SIZE || line_len % 4 != 0 ||
+        # curl's Mozilla CA bundle uses 76-column MIME wrapping.
+        if (!saw_line && line_len > LINE_SIZE) { line_width = 76; }
+        if (line_len == 0 || line_len > line_width || line_len % 4 != 0 ||
             (saw_line && padding != 0)) { ret contracts.INVALID_INPUT; }
-        if (saw_line && last_line_len != LINE_SIZE) { ret contracts.INVALID_INPUT; }
+        if (saw_line && last_line_len != line_width) { ret contracts.INVALID_INPUT; }
         i = 0;
         for (i < line_len) {
             val byte: u8 = input.data[line_start + i];
@@ -322,6 +325,7 @@ fun parse_secret(input: contracts.SecretBytes,
     var last:          [4]^u8;
     var saw_line:      bool  = false;
     var last_line_len: usize = 0;
+    var line_width:    usize = LINE_SIZE;
     for (position < input.len) {
         val line_start: usize = position;
         for (position < input.len && input.data[position]:>u8 != '\r' &&
@@ -354,9 +358,11 @@ fun parse_secret(input: contracts.SecretBytes,
             layout.decoded_len  = groups * 3 - padding;
             ret contracts.OK;
         }
-        if (line_len == 0 || line_len > LINE_SIZE || line_len % 4 != 0 ||
+        # curl's Mozilla CA bundle uses 76-column MIME wrapping.
+        if (!saw_line && line_len > LINE_SIZE) { line_width = 76; }
+        if (line_len == 0 || line_len > line_width || line_len % 4 != 0 ||
             (saw_line && padding != 0)) { ret contracts.INVALID_INPUT; }
-        if (saw_line && last_line_len != LINE_SIZE) { ret contracts.INVALID_INPUT; }
+        if (saw_line && last_line_len != line_width) { ret contracts.INVALID_INPUT; }
         i = 0;
         for (i < line_len) {
             val byte: ^u8 = input.data[line_start + i];
