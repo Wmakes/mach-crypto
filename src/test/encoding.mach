@@ -965,3 +965,19 @@ test pem__mime_wrapped_input_preserves_public_and_secret_der {
     }
     ret 0;
 }
+
+# a body keeps the width of its first line, up to the mime limit of 76 columns
+test pem__body_width_follows_the_first_line_up_to_the_mime_limit {
+    var decoded: [128]u8;
+    var block:   pem.Block;
+    if (pem.decode(contracts.Bytes{data: "-----BEGIN TEST-----\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAA\n-----END TEST-----\n"::*u8, len: 191},
+        contracts.Buffer{data: ?decoded[0], capacity: 128}, ?block) != contracts.OK ||
+        block.der.len != 111) { ret 1; }
+    if (pem.decode(contracts.Bytes{data: "-----BEGIN TEST-----\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n-----END TEST-----\n"::*u8, len: 121},
+        contracts.Buffer{data: ?decoded[0], capacity: 128}, ?block) == contracts.OK) { ret 2; }
+    if (pem.decode(contracts.Bytes{data: "-----BEGIN TEST-----\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAA\n-----END TEST-----\n"::*u8, len: 187},
+        contracts.Buffer{data: ?decoded[0], capacity: 128}, ?block) == contracts.OK) { ret 3; }
+    if (pem.decode(contracts.Bytes{data: "-----BEGIN TEST-----\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAA\n-----END TEST-----\n"::*u8, len: 195},
+        contracts.Buffer{data: ?decoded[0], capacity: 128}, ?block) == contracts.OK) { ret 4; }
+    ret 0;
+}
